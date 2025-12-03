@@ -1,0 +1,56 @@
+# ArgoCD Application for Monitoring Stack
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: monitoring
+  namespace: argocd
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+spec:
+  project: default
+  
+  source:
+    repoURL: https://prometheus-community.github.io/helm-charts
+    targetRevision: 55.5.0
+    chart: kube-prometheus-stack
+    helm:
+      valueFiles:
+        - values.yaml
+      values: |
+        grafana:
+          enabled: true
+          adminPassword: admin
+          service:
+            type: NodePort
+            nodePort: 30001
+        prometheus:
+          service:
+            type: NodePort
+            nodePort: 30000
+        alertmanager:
+          enabled: true
+        nodeExporter:
+          enabled: true
+        kubeStateMetrics:
+          enabled: true
+        kubeControllerManager:
+          enabled: false
+        kubeScheduler:
+          enabled: false
+        kubeProxy:
+          enabled: false
+        kubeEtcd:
+          enabled: false
+  
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: monitoring
+  
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true
+      - ServerSideApply=true
+
